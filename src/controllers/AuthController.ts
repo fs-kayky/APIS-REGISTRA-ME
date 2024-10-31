@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import User from '../models/User';
-import { Counter } from './IdCounter';
+import { Counter } from '../utils/idUtils';
+import { hashPassword, verifyPassword } from '../utils/hashUtils';
+import { generateToken } from '../utils/cryptoUtils';
 
 export const register = async (req: Request, res: Response): Promise<any> => {
     const { nickname, email, password } = req.body;
@@ -21,7 +23,12 @@ export const register = async (req: Request, res: Response): Promise<any> => {
 
         const userId = counter?.sequenceValue;
 
-        const newUser = new User({ nickname, email, password, UserId: userId });
+        console.log('Chegou aqui');
+
+        const hashUserPassword = await hashPassword(password);
+
+        const newUser = new User({ nickname, email, password: hashUserPassword, UserId: userId });
+        console.log(newUser)
         await newUser.save();
         res.status(201).json({ message: "Usuário criado com sucesso" });
 
@@ -36,19 +43,24 @@ export const login = async (req: Request, res: Response): Promise<any> => {
 
     try {
         const user = await User.findOne({ email })
-        if (!user || user.password !== password) {
-            return res.status(404).json({ message: "Credenciais Inválidas" });
-        }
 
-        const { password: _, ...userData } = user.toObject();
-
-        res.status(200).json(
-            {
-                message: "Usuário logado com sucesso",
-                user: userData
+        if(user) {
+            const passwordValidated: boolean = await verifyPassword(user.password, password);
+            if (!passwordValidated) {
+                return res.status(404).json({ message: "Credenciais Inválidas" });
             }
-        )
 
+            const { password: _, ...userData } = user.toObject();
+            res.status(200).json(
+                {
+                    message: "Usuário logado com sucesso",
+                    user: generateToken(userData)
+                }
+            )
+
+        } else {
+            res.status(404).json({ message: "Usuário não encontrado" });
+        }
     } catch (error) {
         res.status(500).json({ message: "Erro ao logar usuário", error });
     }
