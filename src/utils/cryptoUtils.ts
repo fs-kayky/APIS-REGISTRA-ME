@@ -12,8 +12,6 @@ export const generateToken = (payload: any): string => {
 
 export const verifyToken = (token: string): any => {
 
-    console.log(CRYPTO_KEY);
-
     try {
         return jwt.verify(token, CRYPTO_KEY);
     } catch (error) {

@@ -1,5 +1,6 @@
 import { Router } from "express";
-import { login, register } from "../controllers/AuthController";
+import { DecryptUserInformation, login, register } from "../controllers/AuthController";
+import { verifyJWT } from "../middleware/verifyJWT";
 
 const router = Router();
 
@@ -7,5 +8,6 @@ const router = Router();
 
 router.post("/register", register);
 router.post("/login", login);
+router.get("/decrypt", DecryptUserInformation, verifyJWT);
 
 export default router;

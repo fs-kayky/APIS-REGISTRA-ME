@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import User from '../models/User';
 import { Counter } from '../utils/idUtils';
 import { hashPassword, verifyPassword } from '../utils/hashUtils';
-import { generateToken } from '../utils/cryptoUtils';
+import { generateToken, verifyToken } from '../utils/cryptoUtils';
 
 export const register = async (req: Request, res: Response): Promise<any> => {
     const { nickname, email, password } = req.body;
@@ -44,7 +44,7 @@ export const login = async (req: Request, res: Response): Promise<any> => {
     try {
         const user = await User.findOne({ email })
 
-        if(user) {
+        if (user) {
             const passwordValidated: boolean = await verifyPassword(user.password, password);
             if (!passwordValidated) {
                 return res.status(404).json({ message: "Credenciais Inválidas" });
@@ -65,4 +65,23 @@ export const login = async (req: Request, res: Response): Promise<any> => {
         res.status(500).json({ message: "Erro ao logar usuário", error });
     }
 
+}
+
+export const DecryptUserInformation = async (req: Request, res: Response): Promise<any> => {
+
+    const { token } = req.body;
+
+    try {
+        if (!token) {
+            return res.status(400).json({ message: "Token não informado" });
+        }
+
+        if (verifyToken(token)) {
+            return res.status(200).json({ message: "Token válido", user: verifyToken(token) });
+        } else {
+            return res.status(400).json({ message: "Token inválido ou expirado..." });
+        }
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao validar token", error });
+    }
 }
